@@ -1,0 +1,26 @@
+services:
+  database:
+    image: docker.io/postgres:16
+    volumes:
+      - ./db-data:/var/lib/postgresql/data/
+    environment:
+      POSTGRES_USER: catty
+      POSTGRES_PASSWORD: catty
+      POSTGRES_DB: cattybot
+    restart: always
+  catty-bot:
+    image: docker.io/xolli/catty:latest
+    environment:
+      ADMIN_TG_IDS: ID
+      TELEGRAM_BOT_TOKEN: TOKEN
+      GOOGLE_API_KEY: TOKEN
+      OPENAI_TOKEN: TOKEN
+      CATTY_PS_USERNAME: catty
+      CATTY_PS_PASSWORD: catty
+      CATTY_PS_DATABASE: catty
+      CATTY_PS_HOSTNAME: database
+      TZ: Europe/Moscow
+      CATTY_LOG_DIRECTORY: /logs
+    restart: always
+    volumes:
+      - ./logs:/logs
