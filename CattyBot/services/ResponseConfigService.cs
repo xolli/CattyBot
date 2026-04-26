@@ -1,4 +1,5 @@
 using CattyBot.database;
+using Microsoft.EntityFrameworkCore;
 
 namespace CattyBot.services;
 
@@ -10,7 +11,7 @@ public class ResponseConfigService(CattyBotContext db) : BaseService(db)
 
         if (config != null) return config;
         var defaultConfig = new ResponseConfig
-            { ChatId = chatId, HelloMessage = true, ChatBot = true, Mode = ChatMode.NEUTRAL };
+            { ChatId = chatId, HelloMessage = true, ChatBot = true, SystemPromptId = null };
         Db.Add(defaultConfig);
         Db.SaveChanges();
         return defaultConfig;
@@ -24,7 +25,7 @@ public class ResponseConfigService(CattyBotContext db) : BaseService(db)
         if (config == null)
         {
             var newConfig = new ResponseConfig
-                { ChatId = chatId, HelloMessage = false, ChatBot = true, Mode = ChatMode.NEUTRAL };
+                { ChatId = chatId, HelloMessage = false, ChatBot = true, SystemPromptId = null };
             Db.Add(newConfig);
             Db.SaveChanges();
             return false;
@@ -42,7 +43,7 @@ public class ResponseConfigService(CattyBotContext db) : BaseService(db)
         if (config == null)
         {
             var newConfig = new ResponseConfig
-                { ChatId = chatId, HelloMessage = true, ChatBot = false, Mode = ChatMode.NEUTRAL };
+                { ChatId = chatId, HelloMessage = true, ChatBot = false, SystemPromptId = null };
             Db.Add(newConfig);
             Db.SaveChanges();
             return false;
@@ -53,32 +54,31 @@ public class ResponseConfigService(CattyBotContext db) : BaseService(db)
         return config.ChatBot;
     }
 
-    public ChatMode GetChatMode(long chatId)
+    public int? GetSystemPromptId(long chatId)
     {
         var config = GetChatConfig(chatId);
-        if (config != null) return config.Mode;
+        if (config != null) return config.SystemPromptId;
         var newConfig = new ResponseConfig
-            { ChatId = chatId, HelloMessage = true, ChatBot = false, Mode = ChatMode.NEUTRAL };
+            { ChatId = chatId, HelloMessage = true, ChatBot = false, SystemPromptId = null };
         Db.Add(newConfig);
         Db.SaveChanges();
-        return ChatMode.NEUTRAL;
+        return null;
     }
 
-    public void SetChatMode(long chatId, ChatMode mode)
+    public void SetSystemPromptId(long chatId, int? systemPromptId)
     {
         var config = GetChatConfig(chatId);
         if (config == null)
-            Db.Add(new ResponseConfig { ChatId = chatId, HelloMessage = true, ChatBot = false, Mode = mode });
+            Db.Add(new ResponseConfig { ChatId = chatId, HelloMessage = true, ChatBot = false, SystemPromptId = systemPromptId });
         else
-            config.Mode = mode;
+            config.SystemPromptId = systemPromptId;
         Db.SaveChanges();
     }
 
     private ResponseConfig? GetChatConfig(long chatId)
     {
-        var config = (from responseConfig in Db.ResponseConfigs
-            where responseConfig.ChatId == chatId
-            select responseConfig).FirstOrDefault();
-        return config;
+        return Db.ResponseConfigs
+            .Include(c => c.SystemPrompt)
+            .FirstOrDefault(c => c.ChatId == chatId);
     }
 }

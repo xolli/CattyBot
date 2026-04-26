@@ -4,16 +4,15 @@ namespace CattyBot.services;
 
 public class AnalyticsService(CattyBotContext db) : BaseService(db)
 {
-    public void LogAnalytics(long chatId, string model, string provider, ChatMode mode)
+    public void LogAnalytics(long chatId, string model, string provider)
     {
         var currentAnalytics = (from analytic in Db.ModelsAnalytics
-                where analytic.ChatId == chatId && analytic.Model == model && analytic.Provider == provider &&
-                      analytic.ChatMode == mode
+                where analytic.ChatId == chatId && analytic.Model == model && analytic.Provider == provider
                 select analytic)
             .FirstOrDefault();
         if (currentAnalytics == null)
             Db.ModelsAnalytics.Add(new ModelAnalytic
-                { ChatId = chatId, Model = model, Provider = provider, CountRequests = 1L, ChatMode = mode });
+                { ChatId = chatId, Model = model, Provider = provider, CountRequests = 1L });
         else
             currentAnalytics.CountRequests += 1;
 
@@ -22,11 +21,9 @@ public class AnalyticsService(CattyBotContext db) : BaseService(db)
 
     public List<ModelAnalytic> GetAnalytics(long chatId)
     {
-        var analytics = from a in Db.ModelsAnalytics
-            orderby a.CountRequests descending
-            where a.ChatId == chatId
-            select a;
-        return analytics
+        return Db.ModelsAnalytics
+            .Where(a => a.ChatId == chatId)
+            .OrderByDescending(a => a.CountRequests)
             .ToList();
     }
 }

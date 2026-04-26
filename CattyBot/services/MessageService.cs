@@ -1,7 +1,5 @@
 using CattyBot.database;
-using CattyBot.dto;
 using CattyBot.dto.gemini;
-using CattyBot.dto.gpt4free;
 using OpenAI;
 using OpenAI.Chat;
 
@@ -22,25 +20,12 @@ public class MessageService(CattyBotContext db) : BaseService(db)
             .ToList();
     }
 
-    public List<GPT4FreeMessage> GetPreviousMessagesGpt4Free(long chatId, int limit)
+    public List<GeminiMessage> GetPreviousMessagesGemini(long chatId, int limit, int? systemPromptId)
     {
         var messages =
             from msg in Db.Messages
             orderby msg.Id
-            where msg.ChatId == chatId
-            select msg;
-        return messages
-            .Skip(Math.Max(0, messages.Count() - limit))
-            .Select(message => new GPT4FreeMessage(message.IsBot ? "assistant" : "user", message.Content))
-            .ToList();
-    }
-
-    public List<GeminiMessage> GetPreviousMessagesGemini(long chatId, int limit, ChatMode mode)
-    {
-        var messages =
-            from msg in Db.Messages
-            orderby msg.Id
-            where msg.ChatId == chatId && msg.ChatMode == mode
+            where msg.ChatId == chatId && msg.SystemPromptId == systemPromptId
             select msg;
         return messages
             .Skip(Math.Max(0, messages.Count() - limit))
@@ -49,9 +34,9 @@ public class MessageService(CattyBotContext db) : BaseService(db)
             .ToList();
     }
 
-    public void ClearChatMessages(long chatId, ChatMode mode)
+    public void ClearChatMessages(long chatId, int? systemPromptId)
     {
-        var chatMessages = Db.Messages.Where(m => m.ChatId == chatId && m.ChatMode == mode).ToList();
+        var chatMessages = Db.Messages.Where(m => m.ChatId == chatId && m.SystemPromptId == systemPromptId).ToList();
         Db.Messages.RemoveRange(chatMessages);
         Db.SaveChanges();
     }

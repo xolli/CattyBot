@@ -56,16 +56,4 @@
     <data name="SelectLanguage" xml:space="preserve">
         <value>Select Language</value>
     </data>
-    <data name="NEUTRAL" xml:space="preserve">
-        <value>🤖 Neutral</value>
-    </data>
-    <data name="EVIL" xml:space="preserve">
-        <value>😈 Evil</value>
-    </data>
-    <data name="CAT_GIRL" xml:space="preserve">
-        <value>🎀 Neko girl</value>
-    </data>
-    <data name="CUSTOM" xml:space="preserve">
-        <value>💿 Custom</value>
-    </data>
 </root>

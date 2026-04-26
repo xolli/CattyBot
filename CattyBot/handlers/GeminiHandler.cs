@@ -41,11 +41,13 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
             using var responseConfigServiceScope = scopeFactory.CreateScope();
             var responseConfigService =
                 responseConfigServiceScope.ServiceProvider.GetRequiredService<ResponseConfigService>();
-            var mode = responseConfigService.GetChatMode(chatId);
+            var responseConfig = responseConfigService.GetResponseConfig(chatId);
+            var systemPromptId = responseConfig.SystemPromptId;
+            var systemInstruction = responseConfig.SystemPrompt?.Content;
             var messageContent =
-                await GenerateResponse(update.Message.Chat.Id, formattedMessages, mode, cancelToken);
-            LogHistoryMessages(formattedMessages, messageContent, update.Message.Chat.Id, mode);
-            LogAnalytics(chatId, "gemini-2.5-flash", "Google API", mode);
+                await GenerateResponse(update.Message.Chat.Id, formattedMessages, systemPromptId, cancelToken, systemInstruction);
+            LogHistoryMessages(formattedMessages, messageContent, update.Message.Chat.Id, systemPromptId);
+            LogAnalytics(chatId, "gemini-2.5-flash", "Google API", systemPromptId);
 
             var chunks = StringUtils.SplitTextIntoChunks(messageContent);
             foreach (var chunk in chunks)
@@ -85,10 +87,10 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
         }
     }
 
-    private async Task<string> GenerateResponse(long chatId, List<MessageContent> formattedMessages, ChatMode mode,
-        CancellationToken cancelToken)
+    private async Task<string> GenerateResponse(long chatId, List<MessageContent> formattedMessages, int? systemPromptId,
+        CancellationToken cancelToken, string? systemInstruction)
     {
-        var contents = GetHistory(chatId, mode)
+        var contents = GetHistory(chatId, systemPromptId)
             .Concat(formattedMessages.Select(content =>
                 {
                     List<GeminiContent> contents = [];
@@ -104,17 +106,17 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
                 }
             ).Where(msg => msg.parts.Count > 0))
             .ToList();
-        return await _geminiBot.GenerateTextResponse(contents, "gemini-2.5-flash", cancelToken, PromptMapper.GetGeminiPromptMessage(mode));
+        return await _geminiBot.GenerateTextResponse(contents, "gemini-2.5-flash", cancelToken, systemInstruction);
     }
 
-    private List<GeminiMessage> GetHistory(long chatId, ChatMode mode)
+    private List<GeminiMessage> GetHistory(long chatId, int? systemPromptId)
     {
         using var messageServiceScope = scopeFactory.CreateScope();
         var messageService = messageServiceScope.ServiceProvider.GetRequiredService<MessageService>();
-        return messageService.GetPreviousMessagesGemini(chatId, 25, mode);
+        return messageService.GetPreviousMessagesGemini(chatId, 25, systemPromptId);
     }
 
-    private void LogHistoryMessages(List<MessageContent> userMessages, string botResponse, long chatId, ChatMode mode)
+    private void LogHistoryMessages(List<MessageContent> userMessages, string botResponse, long chatId, int? systemPromptId)
     {
         using var messageServiceScope = scopeFactory.CreateScope();
         var messageService = messageServiceScope.ServiceProvider.GetRequiredService<MessageService>();
@@ -122,16 +124,16 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
         {
             if (msg.text != null)
                 messageService.LogMessage(new HistoricalMessage
-                    { Content = msg.text, ChatId = chatId, IsBot = false, ChatMode = mode });
+                    { Content = msg.text, ChatId = chatId, IsBot = false, SystemPromptId = systemPromptId });
         });
         messageService.LogMessage(new HistoricalMessage
-            { Content = botResponse, ChatId = chatId, IsBot = true, ChatMode = mode });
+            { Content = botResponse, ChatId = chatId, IsBot = true, SystemPromptId = systemPromptId });
     }
 
-    private void LogAnalytics(long chatId, string model, string provider, ChatMode mode)
+    private void LogAnalytics(long chatId, string model, string provider, int? systemPromptId)
     {
         using var scope = scopeFactory.CreateScope();
         var analyticsService = scope.ServiceProvider.GetRequiredService<AnalyticsService>();
-        analyticsService.LogAnalytics(chatId, model, provider, mode);
+        analyticsService.LogAnalytics(chatId, model, provider);
     }
 }

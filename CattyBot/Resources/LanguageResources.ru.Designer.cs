@@ -86,29 +86,5 @@ namespace CattyBot.Resources {
                 return ResourceManager.GetString("SelectLanguage", resourceCulture);
             }
         }
-        
-        internal static string NEUTRAL {
-            get {
-                return ResourceManager.GetString("NEUTRAL", resourceCulture);
-            }
-        }
-        
-        internal static string EVIL {
-            get {
-                return ResourceManager.GetString("EVIL", resourceCulture);
-            }
-        }
-        
-        internal static string CAT_GIRL {
-            get {
-                return ResourceManager.GetString("CAT_GIRL", resourceCulture);
-            }
-        }
-        
-        internal static string CUSTOM {
-            get {
-                return ResourceManager.GetString("CUSTOM", resourceCulture);
-            }
-        }
     }
 }

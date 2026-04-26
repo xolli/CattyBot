@@ -46,6 +46,11 @@ public class CommandFactory
         {
             "/setbd" => scope.ServiceProvider.GetRequiredService<ForceSetBirthdayCommand>(),
             "/invalidate" => scope.ServiceProvider.GetRequiredService<DeactivateInactiveChats>(),
+            "/prompt_add" => scope.ServiceProvider.GetRequiredService<SysPromptAddCommand>(),
+            "/prompt_list" => scope.ServiceProvider.GetRequiredService<SysPromptListCommand>(),
+            "/prompt_edit" => scope.ServiceProvider.GetRequiredService<SysPromptEditCommand>(),
+            "/prompt_update" => scope.ServiceProvider.GetRequiredService<SysPromptUpdateCommand>(),
+            "/prompt_delete" => scope.ServiceProvider.GetRequiredService<SysPromptDeleteCommand>(),
             _ => _adminCommands.TryGetValue(commandName, out var resultCommand) ? null : resultCommand
         };
     }

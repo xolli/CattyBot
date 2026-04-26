@@ -1,4 +1,4 @@
-﻿using CattyBot.background;
+using CattyBot.background;
 using CattyBot.buttons;
 using CattyBot.database;
 using CattyBot.handlers;
@@ -45,6 +45,7 @@ public static class Program
                 services.AddScoped<MessageService>();
                 services.AddScoped<StatsService>();
                 services.AddScoped<ResponseConfigService>();
+                services.AddScoped<SystemPromptService>();
                 services.AddScoped<AnalyticsService>();
                 services.AddScoped<BirthdaysService>();
                 services.AddScoped<LocaleService>();
@@ -65,11 +66,15 @@ public static class Program
                 services.AddScoped<ReactionHandler>();
                 services.AddScoped<RemoveBirthday>();
                 services.AddScoped<DeactivateInactiveChats>();
+                services.AddScoped<SysPromptAddCommand>();
+                services.AddScoped<SysPromptListCommand>();
+                services.AddScoped<SysPromptEditCommand>();
+                services.AddScoped<SysPromptUpdateCommand>();
+                services.AddScoped<SysPromptDeleteCommand>();
                 SetTelegramClient(services);
                 SetOpenAiClient(services);
                 services.AddScoped<CallbackActionFactory>();
-                services.AddScoped<OpenAiHandler>();
-                // services.AddScoped<Gpt4FreeHandler>();
+                // services.AddScoped<OpenAiHandler>();
                 services.AddScoped<GeminiHandler>();
                 services.AddHostedService<CattyBotService>();
                 services.AddHostedService<EventsNotifier>();

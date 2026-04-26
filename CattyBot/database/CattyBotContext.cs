@@ -30,6 +30,8 @@ public class CattyBotContext(DbContextOptions<CattyBotContext> options) : DbCont
 
     public DbSet<ResponseConfig> ResponseConfigs { get; set; }
 
+    public DbSet<SystemPrompt> SystemPrompts { get; set; }
+
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {
         base.OnConfiguring(optionsBuilder);
@@ -47,5 +49,22 @@ public class CattyBotContext(DbContextOptions<CattyBotContext> options) : DbCont
         var database = Environment.GetEnvironmentVariable(DatabaseEnv);
         if (database == null) database = username;
         return $"User Id={username};Password={password};Host={hostname};Database={database};";
+    }
+    
+    protected override void OnModelCreating(ModelBuilder modelBuilder)
+    {
+        base.OnModelCreating(modelBuilder);
+
+        modelBuilder.Entity<HistoricalMessage>()
+            .HasOne(m => m.SystemPrompt)
+            .WithMany()
+            .HasForeignKey(m => m.SystemPromptId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ResponseConfig>()
+            .HasOne(c => c.SystemPrompt)
+            .WithMany()
+            .HasForeignKey(c => c.SystemPromptId)
+            .OnDelete(DeleteBehavior.SetNull);
     }
 }

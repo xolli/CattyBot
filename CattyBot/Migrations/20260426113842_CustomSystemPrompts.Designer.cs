@@ -3,6 +3,7 @@ using System;
 using CattyBot.database;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace CattyBot.Migrations
 {
     [DbContext(typeof(CattyBotContext))]
-    partial class CattyBotContextModelSnapshot : ModelSnapshot
+    [Migration("20260426113842_CustomSystemPrompts")]
+    partial class CustomSystemPrompts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -170,7 +173,12 @@ namespace CattyBot.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<int?>("SystemPromptId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
+
+                    b.HasIndex("SystemPromptId");
 
                     b.ToTable("ModelsAnalytics");
                 });
@@ -333,8 +341,16 @@ namespace CattyBot.Migrations
                 {
                     b.HasOne("CattyBot.database.SystemPrompt", "SystemPrompt")
                         .WithMany()
-                        .HasForeignKey("SystemPromptId")
-                        .OnDelete(DeleteBehavior.Cascade);
+                        .HasForeignKey("SystemPromptId");
+
+                    b.Navigation("SystemPrompt");
+                });
+
+            modelBuilder.Entity("CattyBot.database.ModelAnalytic", b =>
+                {
+                    b.HasOne("CattyBot.database.SystemPrompt", "SystemPrompt")
+                        .WithMany()
+                        .HasForeignKey("SystemPromptId");
 
                     b.Navigation("SystemPrompt");
                 });
@@ -354,8 +370,7 @@ namespace CattyBot.Migrations
                 {
                     b.HasOne("CattyBot.database.SystemPrompt", "SystemPrompt")
                         .WithMany()
-                        .HasForeignKey("SystemPromptId")
-                        .OnDelete(DeleteBehavior.SetNull);
+                        .HasForeignKey("SystemPromptId");
 
                     b.Navigation("SystemPrompt");
                 });

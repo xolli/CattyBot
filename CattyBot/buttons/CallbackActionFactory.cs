@@ -7,7 +7,14 @@ public class CallbackActionFactory
 {
     private readonly Dictionary<string, ICallbackAction> _callbackActions;
 
-    public CallbackActionFactory(LocaleService localeService, ResponseConfigService responseConfigService)
+    private readonly ICallbackAction _sysPromptEditAction;
+
+    private readonly ICallbackAction _sysPromptDeleteAction;
+
+    private readonly ICallbackAction _setSystemPromptAction;
+
+    public CallbackActionFactory(ResponseConfigService responseConfigService,
+        SystemPromptService systemPromptService)
     {
         _callbackActions = new Dictionary<string, ICallbackAction>
         {
@@ -15,12 +22,16 @@ public class CallbackActionFactory
             // { "russianLanguage", new SetRussian(localeService) },
             { "removeMessage", new RemoveMessage() }
         };
-        foreach (ChatMode mode in Enum.GetValues(typeof(ChatMode)))
-            _callbackActions.Add(mode.ToString(), new SetChatMode(responseConfigService));
+        _sysPromptEditAction = new SysPromptEditAction();
+        _sysPromptDeleteAction = new SysPromptDeleteAction(systemPromptService);
+        _setSystemPromptAction = new SetSystemPrompt(responseConfigService);
     }
 
     public ICallbackAction? GetCallbackActionByName(string name)
     {
+        if (name.StartsWith("sysPromptEdit:")) return _sysPromptEditAction;
+        if (name.StartsWith("sysPromptDelete:")) return _sysPromptDeleteAction;
+        if (name.StartsWith("setSysPrompt:")) return _setSystemPromptAction;
         return _callbackActions.GetValueOrDefault(name);
     }
 }

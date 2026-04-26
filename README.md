@@ -29,3 +29,7 @@ You can try this bot on the [link](https://t.me/chatcattybot)
 | `CATTY_PS_DATABASE`   | Postgres database name to save statistic | false     | same as `CATTY_PS_USERNAME` |
 | `CATTY_LOG_DIRECTORY` | path to log files                        | false     | null                        |
 | `CHATS_WHITELIST`     | Allowed telegram chats ids               | false     | All chats                   |
+
+# TODO
+- use Scrutor
+- User-defined prompts

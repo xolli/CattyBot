@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace CattyBot.database;
 
@@ -12,5 +13,8 @@ public class HistoricalMessage
 
     [Required] public bool IsBot { get; set; }
 
-    [Required] public ChatMode ChatMode { get; set; }
+    public int? SystemPromptId { get; set; }
+
+    [ForeignKey("SystemPromptId")]
+    public virtual SystemPrompt? SystemPrompt { get; set; }
 }

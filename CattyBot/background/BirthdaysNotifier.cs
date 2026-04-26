@@ -88,6 +88,7 @@ public class BirthdaysNotifier(IServiceScopeFactory scopeFactory, TelegramBotCli
         });
     }
 
+    // TODO: unify LLM requests
     private async Task<string> GenerateText(Birthday birthday, CancellationToken cancelToken)
     {
         var request = FormatBirthdayRequest(birthday);
