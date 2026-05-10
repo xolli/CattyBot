@@ -3,19 +3,20 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using CattyBot.dto.gemini;
 using CattyBot.exceptions;
-using CattyBot.handlers;
 
 namespace CattyBot.services;
 
 public class GeminiBot
 {
+    private const string GeminiApiKeyEnv = "GOOGLE_API_KEY";
+    
     private static readonly HttpClient BotClient = new()
     {
         BaseAddress = new Uri("https://generativelanguage.googleapis.com"),
         Timeout = new TimeSpan(0, 5, 0)
     };
 
-    private readonly string? _apikey = Environment.GetEnvironmentVariable(GeminiHandler.GeminiApiKeyEnv);
+    private readonly string? _apikey = Environment.GetEnvironmentVariable(GeminiApiKeyEnv);
 
     // private readonly GeminiConfig _generationConfig = new(0.9f, 2000);
     private readonly JsonSerializerOptions _jsonSerializerOptions = new() { PropertyNameCaseInsensitive = true };
@@ -35,7 +36,7 @@ public class GeminiBot
     {
         if (_apikey is null)
             throw new EnvVariablesException(
-                $"Expect Gemini API key. Set it to environment variable {GeminiHandler.GeminiApiKeyEnv}");
+                $"Expect Gemini API key. Set it to environment variable {GeminiApiKeyEnv}");
 
         var geminiSystemInstruction = systemInstruction != null
             ? new GeminiSystemInstruction(new GeminiText(systemInstruction))

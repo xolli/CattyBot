@@ -8,7 +8,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using OpenAI;
 using Serilog;
 using Telegram.Bot;
 
@@ -72,12 +71,10 @@ public static class Program
                 services.AddScoped<SysPromptUpdateCommand>();
                 services.AddScoped<SysPromptDeleteCommand>();
                 SetTelegramClient(services);
-                SetOpenAiClient(services);
                 services.AddScoped<CallbackActionFactory>();
-                // services.AddScoped<OpenAiHandler>();
                 services.AddScoped<GeminiHandler>();
+                services.AddScoped<OpenRouterHandler>();
                 services.AddHostedService<CattyBotService>();
-                services.AddHostedService<EventsNotifier>();
                 services.AddHostedService<BirthdaysNotifier>();
             })
             .ConfigureLogging((context, logging) =>
@@ -95,14 +92,6 @@ public static class Program
         if (token == null)
             throw new EnvVariablesException($"Expect Telegram token. Set it to environment variable {TelegramEnv}");
         services.AddSingleton(new TelegramBotClient(token));
-    }
-
-    private static void SetOpenAiClient(IServiceCollection services)
-    {
-        var openAiToken = Environment.GetEnvironmentVariable(OpenAiTokenEnv);
-        if (openAiToken == null)
-            throw new EnvVariablesException($"Expect Open AI token. Set it to environment variable {OpenAiTokenEnv}");
-        services.AddSingleton(new OpenAIClient(new OpenAIAuthentication(openAiToken)));
     }
 
     private static void SetLogger()

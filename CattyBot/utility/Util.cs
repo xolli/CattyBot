@@ -37,7 +37,7 @@ public static partial class Util
     public static string FormatNames(Telegram.Bot.Types.User? user)
     {
         if (user is null) return "unknown";
-        if (user.LastName is not null && user.LastName.Length > 0)
+        if (!string.IsNullOrEmpty(user.LastName))
             return EscapeSpecialSymbols($"{user.FirstName} {user.LastName}");
 
         return EscapeSpecialSymbols(user.FirstName);
@@ -56,9 +56,9 @@ public static partial class Util
     public static string FormatNames(User user, bool userIdLink)
     {
         var escapedFirstLastNames = EscapeSpecialSymbols($"{user.FirstName} {user.LastName}");
-        if (user.LastName is not null && user.LastName.Length > 0 && !userIdLink)
+        if (!string.IsNullOrEmpty(user.LastName) && !userIdLink)
             return escapedFirstLastNames;
-        if (user.LastName is not null && user.LastName.Length > 0 && userIdLink)
+        if (!string.IsNullOrEmpty(user.LastName) && userIdLink)
             return $"[{escapedFirstLastNames}](tg://user?id={user.UserId})";
 
         var escapedFirstName = EscapeSpecialSymbols(user.FirstName);
@@ -77,9 +77,12 @@ public static partial class Util
         string? mainText = null;
         var textContent = tgMessage.Text ?? tgMessage.Caption;
         if (tgMessage.From?.Id != myId && textContent is not null)
-            mainText = tgMessage.From?.Username is not null
-                ? $"Никнейм: {FormatUserName(tgMessage.From, true)}; Имя: {FormatNames(tgMessage.From)}\nСообщение: [\n{textContent}\n]"
-                : $"Имя: {FormatNames(tgMessage.From)}\nСообщение: [\n{textContent}\n]";
+        {
+            var userIdentification = tgMessage.From?.Username is not null 
+                ? $"{FormatNames(tgMessage.From)} (@{tgMessage.From.Username})" 
+                : FormatNames(tgMessage.From);
+            mainText = $"{userIdentification}: {textContent}";
+        }
         var photo = await GetPhotoBase64(client, tgMessage, cancelToken);
         var replies = tgMessage.ReplyToMessage != null
             ? await FormatMessageWithReplies(client, tgMessage.ReplyToMessage, myId, cancelToken)

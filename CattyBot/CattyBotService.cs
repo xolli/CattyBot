@@ -262,8 +262,12 @@ public class CattyBotService : IHostedService
         Message message, CancellationToken cancelToken)
     {
         using var scope = _scopeFactory.CreateScope();
-        var geminiHandler = scope.ServiceProvider.GetRequiredService<GeminiHandler>();
-        geminiHandler.GenerateResponse(client, update, _myId, cancelToken);
+        
+        var openRouterHandler = scope.ServiceProvider.GetRequiredService<OpenRouterHandler>();
+        openRouterHandler.GenerateResponse(client, update, _myId, cancelToken);
+        // TODO fallback to GeminiHandler if OpenRouterHandler fails
+        // var geminiHandler = scope.ServiceProvider.GetRequiredService<GeminiHandler>();
+        // geminiHandler.GenerateResponse(client, update, _myId, cancelToken); // replace with OpenAiHandler
     }
 
     private async Task HandleCommand(string command, ITelegramBotClient client, Update update,

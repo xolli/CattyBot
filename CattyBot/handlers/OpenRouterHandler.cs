@@ -1,20 +1,20 @@
 using CattyBot.database;
 using CattyBot.dto;
-using CattyBot.dto.gemini;
-using CattyBot.exceptions;
 using CattyBot.services;
 using CattyBot.utility;
 using Microsoft.Extensions.DependencyInjection;
+using OpenAI.Chat;
 using Serilog;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
+using ChatMessage = OpenAI.Chat.ChatMessage;
 
 namespace CattyBot.handlers;
 
-public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
+public class OpenRouterHandler(IServiceScopeFactory scopeFactory) : Handler
 {
-    private readonly GeminiBot _geminiBot = new();
+    private readonly OpenRouterBot _bot = new();
 
     public override async Task HandleUpdate(ITelegramBotClient client, Update update, CancellationToken cancelToken,
         Locale language = Locale.RU)
@@ -45,7 +45,6 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
             var messageContent =
                 await GenerateResponse(update.Message.Chat.Id, formattedMessages, systemPromptId, cancelToken, systemInstruction);
             LogHistoryMessages(formattedMessages, messageContent, update.Message.Chat.Id, systemPromptId);
-            LogAnalytics(chatId, "gemini-2.5-flash", "Google API", systemPromptId);
 
             var chunks = StringUtils.SplitTextIntoChunks(messageContent);
             foreach (var chunk in chunks)
@@ -56,28 +55,16 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
                     cancellationToken: cancelToken,
                     linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },
                     replyParameters: new ReplyParameters { ChatId = chatId, MessageId = update.Message.MessageId }
-                );   
+                );
                 Thread.Sleep(100);
             }
         }
-        catch (GeminiException ex)
-        {
-            Log.Error(ex, "Can't use Gemini API");
-            Log.Error(ex.Message);
-            await client.SendMessage(
-                chatId,
-                "Не могу придумать ответ. Напиши ещё раз",
-                cancellationToken: cancelToken,
-                linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },
-                replyParameters: new ReplyParameters { ChatId = chatId, MessageId = update.Message.MessageId }
-            );
-        }
         catch (Exception ex)
         {
-            Log.Error(ex, "Cannot send telegram message");
+            Log.Error(ex, "Can't use OpenRouter API");
             await client.SendMessage(
                 chatId,
-                "Неожиданная ошибка. Напиши ещё раз",
+                "Что-то пошло не так. Напиши ещё раз",
                 cancellationToken: cancelToken,
                 linkPreviewOptions: new LinkPreviewOptions { IsDisabled = true },
                 replyParameters: new ReplyParameters { ChatId = chatId, MessageId = update.Message.MessageId }
@@ -88,30 +75,36 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
     private async Task<string> GenerateResponse(long chatId, List<MessageContent> formattedMessages, int? systemPromptId,
         CancellationToken cancelToken, string? systemInstruction)
     {
-        var contents = GetHistory(chatId, systemPromptId)
-            .Concat(formattedMessages.Select(content =>
-                {
-                    List<GeminiContent> contents = [];
-                    if (content.text is not null)
-                    {
-                        contents.Add(new GeminiContent(content.text, null));
-                    }
-                    if (content.photoBase64 is not null)
-                    {
-                        contents.Add(new GeminiContent(null, new GeminiInlineData("image/jpeg", content.photoBase64)));
-                    }
-                    return new GeminiMessage(contents, "user");
-                }
-            ).Where(msg => msg.parts.Count > 0))
+        var history = GetHistory(chatId, systemPromptId);
+        var userMessages = formattedMessages
+            .Select(content =>
+            {
+                var parts = new List<ChatMessageContentPart>();
+                if (content.text is not null)
+                    parts.Add(ChatMessageContentPart.CreateTextPart(content.text));
+                if (content.photoBase64 is not null)
+                    parts.Add(ChatMessageContentPart.CreateImagePart(
+                        BinaryData.FromBytes(Convert.FromBase64String(content.photoBase64)), "image/jpeg"));
+                return parts.Count > 0 ? ChatMessage.CreateUserMessage(parts) : null;
+            })
+            .Where(msg => msg is not null)
+            .Select(msg => msg!)
             .ToList();
-        return await _geminiBot.GenerateTextResponse(contents, "gemini-2.5-flash", cancelToken, systemInstruction);
+
+        var messages = new List<ChatMessage>();
+        if (systemInstruction is not null)
+            messages.Add(ChatMessage.CreateSystemMessage(systemInstruction));
+        messages.AddRange(history);
+        messages.AddRange(userMessages);
+
+        return await _bot.GenerateTextResponse(messages, cancelToken);
     }
 
-    private List<GeminiMessage> GetHistory(long chatId, int? systemPromptId)
+    private List<ChatMessage> GetHistory(long chatId, int? systemPromptId)
     {
         using var messageServiceScope = scopeFactory.CreateScope();
         var messageService = messageServiceScope.ServiceProvider.GetRequiredService<MessageService>();
-        return messageService.GetPreviousMessagesGemini(chatId, 25, systemPromptId);
+        return messageService.GetPreviousMessagesOpenRouter(chatId, 25, systemPromptId);
     }
 
     private void LogHistoryMessages(List<MessageContent> userMessages, string botResponse, long chatId, int? systemPromptId)
@@ -126,12 +119,5 @@ public class GeminiHandler(IServiceScopeFactory scopeFactory) : Handler
         });
         messageService.LogMessage(new HistoricalMessage
             { Content = botResponse, ChatId = chatId, IsBot = true, SystemPromptId = systemPromptId });
-    }
-
-    private void LogAnalytics(long chatId, string model, string provider, int? systemPromptId)
-    {
-        using var scope = scopeFactory.CreateScope();
-        var analyticsService = scope.ServiceProvider.GetRequiredService<AnalyticsService>();
-        analyticsService.LogAnalytics(chatId, model, provider);
     }
 }

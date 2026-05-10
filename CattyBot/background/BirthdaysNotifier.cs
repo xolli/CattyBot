@@ -3,17 +3,14 @@ using CattyBot.services;
 using CattyBot.utility;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using OpenAI;
-using OpenAI.Chat;
-using OpenAI.Models;
 using Serilog;
 using Sgbj.Cron;
 using Telegram.Bot;
-using Message = OpenAI.Chat.Message;
+using ChatMessage = OpenAI.Chat.ChatMessage;
 
 namespace CattyBot.background;
 
-public class BirthdaysNotifier(IServiceScopeFactory scopeFactory, TelegramBotClient client, OpenAIClient openApiClient)
+public class BirthdaysNotifier(IServiceScopeFactory scopeFactory, TelegramBotClient client)
     : BackgroundService
 {
     private const string BirthdayPrompt =
@@ -22,6 +19,8 @@ public class BirthdaysNotifier(IServiceScopeFactory scopeFactory, TelegramBotCli
         "Я напишу тебе лишь имя пользователя, его имя и текущий день. Не пиши ничего кроме поздравления";
 
     private readonly GeminiBot _geminiBot = new();
+
+    private readonly OpenRouterBot _openRouterBot = new();
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {
@@ -50,7 +49,12 @@ public class BirthdaysNotifier(IServiceScopeFactory scopeFactory, TelegramBotCli
             string announce;
             try
             {
-                announce = await GenerateText(birthday, cancelToken);
+                announce = await _openRouterBot.GenerateTextResponse(
+                    [
+                        ChatMessage.CreateSystemMessage(BirthdayPrompt),
+                        ChatMessage.CreateUserMessage(FormatBirthdayRequest(birthday))
+                    ],
+                    cancelToken);
             }
             catch (Exception)
             {
@@ -86,21 +90,6 @@ public class BirthdaysNotifier(IServiceScopeFactory scopeFactory, TelegramBotCli
                 }
             }
         });
-    }
-
-    // TODO: unify LLM requests
-    private async Task<string> GenerateText(Birthday birthday, CancellationToken cancelToken)
-    {
-        var request = FormatBirthdayRequest(birthday);
-        var messages = new List<Message>
-        {
-            new(Role.System, BirthdayPrompt),
-            new(Role.User, request)
-        };
-
-        var chatRequest = new ChatRequest(messages, Model.GPT4, maxTokens: 400);
-        var response = await openApiClient.ChatEndpoint.GetCompletionAsync(chatRequest, cancelToken);
-        return response.FirstChoice.Message.Content.ToString();
     }
 
     private static string FormatBirthdayRequest(Birthday birthday)
