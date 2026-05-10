@@ -33,6 +33,9 @@ public class CommandFactory
             case "/clearcontext": return scope.ServiceProvider.GetRequiredService<ClearContextCommand>();
             case "/setmode": return scope.ServiceProvider.GetRequiredService<SetModeCommand>();
             case "/reacts": return scope.ServiceProvider.GetRequiredService<GetReactionsStatisticsCommand>();
+            case "/mode_add": return scope.ServiceProvider.GetRequiredService<ModeAddCommand>();
+            case "/mode_ls": return scope.ServiceProvider.GetRequiredService<ModeListCommand>();
+            case "/mode_rm": return scope.ServiceProvider.GetRequiredService<ModeRemoveCommand>();
         }
 
         return _userCommands.GetValueOrDefault(commandName, _defaultCommand);

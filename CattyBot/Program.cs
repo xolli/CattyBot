@@ -70,6 +70,9 @@ public static class Program
                 services.AddScoped<SysPromptEditCommand>();
                 services.AddScoped<SysPromptUpdateCommand>();
                 services.AddScoped<SysPromptDeleteCommand>();
+                services.AddScoped<ModeAddCommand>();
+                services.AddScoped<ModeListCommand>();
+                services.AddScoped<ModeRemoveCommand>();
                 SetTelegramClient(services);
                 services.AddScoped<CallbackActionFactory>();
                 services.AddScoped<GeminiHandler>();

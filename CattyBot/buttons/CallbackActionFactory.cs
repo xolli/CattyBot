@@ -11,6 +11,8 @@ public class CallbackActionFactory
 
     private readonly ICallbackAction _sysPromptDeleteAction;
 
+    private readonly ICallbackAction _modeDeleteAction;
+
     private readonly ICallbackAction _setSystemPromptAction;
 
     public CallbackActionFactory(ResponseConfigService responseConfigService,
@@ -24,6 +26,7 @@ public class CallbackActionFactory
         };
         _sysPromptEditAction = new SysPromptEditAction();
         _sysPromptDeleteAction = new SysPromptDeleteAction(systemPromptService);
+        _modeDeleteAction = new ModeDeleteAction(systemPromptService);
         _setSystemPromptAction = new SetSystemPrompt(responseConfigService);
     }
 
@@ -31,6 +34,7 @@ public class CallbackActionFactory
     {
         if (name.StartsWith("sysPromptEdit:")) return _sysPromptEditAction;
         if (name.StartsWith("sysPromptDelete:")) return _sysPromptDeleteAction;
+        if (name.StartsWith("modeDelete:")) return _modeDeleteAction;
         if (name.StartsWith("setSysPrompt:")) return _setSystemPromptAction;
         return _callbackActions.GetValueOrDefault(name);
     }

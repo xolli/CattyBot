@@ -5,7 +5,7 @@ using Telegram.Bot.Types;
 
 namespace CattyBot.handlers.commands;
 
-public class SysPromptListCommand(IServiceScopeFactory scopeFactory) : Command
+public class ModeListCommand(IServiceScopeFactory scopeFactory) : Command
 {
     protected override async Task HandleCommand(ITelegramBotClient client, Message message, CancellationToken cancelToken)
     {
@@ -13,34 +13,22 @@ public class SysPromptListCommand(IServiceScopeFactory scopeFactory) : Command
 
         using var scope = scopeFactory.CreateScope();
         var service = scope.ServiceProvider.GetRequiredService<SystemPromptService>();
-
-        var adminPrompts = service.GetAdminPrompts();
         var userPrompts = service.GetUserPromptsForChat(message.Chat.Id);
 
-        var response = new List<string>();
-
-        if (adminPrompts.Count > 0)
+        if (userPrompts.Count == 0)
         {
-            response.Add("*🔧 Admin System Prompts:*");
-            foreach (var p in adminPrompts)
-            {
-                response.Add($"{p.Id} | {p.Name}");
-            }
+            await client.SendMessage(
+                message.Chat.Id,
+                "No user-defined prompts in this chat",
+                cancellationToken: cancelToken
+            );
+            return;
         }
 
-        if (userPrompts.Count > 0)
+        var response = new List<string> { "👥 Промпты:" };
+        foreach (var p in userPrompts)
         {
-            if (response.Count > 0) response.Add("");
-            response.Add("*👥 User-defined Prompts (this chat):*");
-            foreach (var p in userPrompts)
-            {
-                response.Add($"{p.Id} | {p.Name}");
-            }
-        }
-
-        if (response.Count == 0)
-        {
-            response.Add("No system prompts available");
+            response.Add($"{p.Id} | {p.Name}");
         }
 
         await client.SendMessage(

@@ -27,7 +27,7 @@
         <value>Unknown command =(</value>
     </data>
     <data name="Help" xml:space="preserve">
-        <value>Hi\! I am just a simple bot written by @uxolli (in C#) for chats\. Available commands:
+        <value>Hi\! I am just a simple bot for chats\. Available commands:
 /cat — get a random cat
 /help — see this message
 /stats — get message statistics
